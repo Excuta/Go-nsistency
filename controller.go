@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 
@@ -12,17 +11,8 @@ func main() {
 	router := httprouter.New()
 	router.GET("/counters", headersHandler(getAllHanlder))
 	router.GET("/counters/:id", makeCountersHandler(getHanlder))
-	router.POST("/counters/:id", makeCountersHandler(editHanlder))
+	router.POST("/counters/:id", makeCountersHandler(incrementHanlder))
 	router.HandleOPTIONS = true
-	router.GlobalOPTIONS = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Set CORS headers
-		fmt.Println(r.Method)
-		header := w.Header()
-		header.Set("Access-Control-Allow-Methods", header.Get("Allow"))
-		header.Set("Access-Control-Allow-Origin", "*")
-		header.Set("Content-Type", "application/json")
-
-	})
 
 	log.Fatal(http.ListenAndServe("", router))
 }
@@ -41,15 +31,19 @@ func makeCountersHandler(fn func(w http.ResponseWriter, r *http.Request, ps http
 }
 
 func getAllHanlder(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	w.Write([]byte("{\"res\":\"get all\"}"))
+	resp, err := GetAll()
+	if err != nil {
+		http.Error(w, "Something went wrong", http.StatusInternalServerError)
+	}
+	w.Write(resp)
 }
 
 func getHanlder(w http.ResponseWriter, r *http.Request, ps httprouter.Params, counterId string) {
 	w.Write([]byte("{\"res\":\"get\"}"))
 }
 
-func editHanlder(w http.ResponseWriter, r *http.Request, ps httprouter.Params, counterId string) {
-	w.Write([]byte("{\"res\":\"edit\"}"))
+func incrementHanlder(w http.ResponseWriter, r *http.Request, ps httprouter.Params, counterId string) {
+	w.Write([]byte("{\"res\":\"increment\"}"))
 }
 
 func headersHandler(fn func(w http.ResponseWriter, r *http.Request, ps httprouter.Params)) httprouter.Handle {
