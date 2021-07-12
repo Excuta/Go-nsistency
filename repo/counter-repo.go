@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"time"
 
 	"github.com/go-redis/redis"
 	"github.com/jackc/pgx/v4"
@@ -15,28 +16,34 @@ var client = redis.NewClient(&redis.Options{
 	DB:       0,
 })
 
-const expirySeconds = 30
+const counterKey = "counter"
+const expirySeconds = 30 * time.Second
 
-var pgClient, pgerr = pgx.Connect(context.Background(), "postgres://yahia:3d%40k%24>JL%24V@192.168.25.43:5432/counter_db")
+var pgClient, pgerr = pgx.Connect(context.Background(), "postgres://yahia:2472BvZFgUNrof@192.168.1.111:5432/counter_db")
 
-func GetCounter() (int, error) {
-	value, err := client.Get("counter").Result()
-	if err != nil {
-		value = getFreshCounter()
+func GetCounter() (int64, error) {
+	value, redisError := client.Get(counterKey).Result()
+	fmt.Printf("Cached Value %q\n", value)
+	res, parseError := strconv.ParseInt(value, 10, 64)
+	if redisError != nil || parseError != nil {
+		res = getFreshCounter()
+		fmt.Printf("Fresh counter %v\n", res)
+		client.Set(counterKey, res, expirySeconds)
 	}
-	return strconv.Atoi(value)
+	return res, nil
 }
 
 func Increment() error {
 	if pgerr != nil {
 		return pgerr
 	}
-	var greeting string
-	pgClient.QueryRow(context.Background(), "select 'Hello, world!'").Scan(&greeting)
-	fmt.Println(greeting)
+	go pgClient.QueryRow(context.Background(), "update counters set value = value +1").Scan()
 	return nil
 }
 
-func getFreshCounter() string {
-	return ""
+// assumes a value will always return from db
+func getFreshCounter() int64 {
+	var value int64
+	pgClient.QueryRow(context.Background(), "select value from counters limit 1").Scan(&value)
+	return value
 }

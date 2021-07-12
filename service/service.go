@@ -3,6 +3,7 @@ package service
 import (
 	"encoding/json"
 	"excuta/go-nsistency/repo"
+	"fmt"
 )
 
 func GetCounter() ([]byte, error) {
@@ -10,7 +11,9 @@ func GetCounter() ([]byte, error) {
 	if error != nil {
 		return []byte{}, error
 	}
-	return json.Marshal(Counter{value: counter})
+	resp, err := json.Marshal(&Counter{counter})
+	fmt.Printf("Response json: %v\n", string(resp))
+	return resp, err
 }
 
 func Increment() error {
@@ -18,5 +21,5 @@ func Increment() error {
 }
 
 type Counter struct {
-	value int
+	Value int64
 }
