@@ -4,46 +4,32 @@ import (
 	"log"
 	"net/http"
 
+	"excuta/go-nsistency/service"
+
 	"github.com/julienschmidt/httprouter"
 )
 
 func main() {
 	router := httprouter.New()
-	router.GET("/counters", headersHandler(getAllHanlder))
-	router.GET("/counters/:id", makeCountersHandler(getHanlder))
-	router.POST("/counters/:id", makeCountersHandler(incrementHanlder))
-	router.HandleOPTIONS = true
+	router.GET("/getcounter", headersHandler(getCounterHandler))
+	router.POST("/increment", headersHandler(incrementHanlder))
 
 	log.Fatal(http.ListenAndServe("", router))
 }
 
-func makeCountersHandler(fn func(w http.ResponseWriter, r *http.Request, ps httprouter.Params, counterId string)) httprouter.Handle {
-	return headersHandler(func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-
-		id := ps.ByName("id")
-		if id == "" {
-			http.Error(w, "Counter id is required", http.StatusBadRequest)
-			return
-		}
-		fn(w, r, ps, id)
-	})
-
-}
-
-func getAllHanlder(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	resp, err := GetAll()
+func getCounterHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	resp, err := service.GetCounter()
 	if err != nil {
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
 	}
 	w.Write(resp)
 }
-
-func getHanlder(w http.ResponseWriter, r *http.Request, ps httprouter.Params, counterId string) {
-	w.Write([]byte("{\"res\":\"get\"}"))
-}
-
-func incrementHanlder(w http.ResponseWriter, r *http.Request, ps httprouter.Params, counterId string) {
-	w.Write([]byte("{\"res\":\"increment\"}"))
+func incrementHanlder(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	err := service.Increment()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+	w.Write([]byte("increment"))
 }
 
 func headersHandler(fn func(w http.ResponseWriter, r *http.Request, ps httprouter.Params)) httprouter.Handle {
