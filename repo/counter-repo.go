@@ -11,7 +11,7 @@ import (
 )
 
 var client = redis.NewClient(&redis.Options{
-	Addr:     "localhost:6379",
+	Addr:     "127.0.0.1:6379",
 	Password: "",
 	DB:       0,
 })
@@ -19,7 +19,7 @@ var client = redis.NewClient(&redis.Options{
 const counterKey = "counter"
 const expirySeconds = 30 * time.Second
 
-var pgClient, pgerr = pgx.Connect(context.Background(), "postgres://yahia:2472BvZFgUNrof@192.168.1.111:5432/counter_db")
+var pgClient, pgerr = pgx.Connect(context.Background(), "postgres://yahia:2472BvZFgUNrof@127.0.0.1:5432/counter_db")
 
 func GetCounter() (int64, error) {
 	value, redisError := client.Get(counterKey).Result()
