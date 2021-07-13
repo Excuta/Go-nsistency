@@ -21,6 +21,10 @@ const expirySeconds = 30 * time.Second
 
 var pgClient, pgerr = pgx.Connect(context.Background(), "postgres://yahia:2472BvZFgUNrof@192.168.1.111:5432/counter_db")
 
+func init() {
+	pgClient.Exec(client.Context(), "CREATE TABLE IF NOT EXISTS public.counters(id uuid NOT NULL, value bigint NOT NULL, CONSTRAINT \"unique id\" PRIMARY KEY (id), CONSTRAINT \"value non negative\" CHECK (value >= 0))")
+}
+
 func GetCounter() (int64, error) {
 	value, redisError := client.Get(counterKey).Result()
 	fmt.Printf("Cached Value %q\n", value)
