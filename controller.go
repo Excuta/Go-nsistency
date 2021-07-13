@@ -1,8 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
+	"os"
 
 	"excuta/go-nsistency/service"
 
@@ -14,7 +16,7 @@ func main() {
 	router.GET("/getcounter", headersHandler(getCounterHandler))
 	router.POST("/increment", headersHandler(incrementHanlder))
 
-	log.Fatal(http.ListenAndServe("", router))
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%v", os.Getenv("GON_PORT")), router))
 }
 
 func getCounterHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -29,7 +31,6 @@ func incrementHanlder(w http.ResponseWriter, r *http.Request, ps httprouter.Para
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
-	w.Write([]byte("increment"))
 }
 
 func headersHandler(fn func(w http.ResponseWriter, r *http.Request, ps httprouter.Params)) httprouter.Handle {
