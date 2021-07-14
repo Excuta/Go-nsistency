@@ -24,6 +24,5 @@ WORKDIR /dist
 # Copy binary from build to main folder
 RUN cp /build/main .
 
-
 # Command to run when starting the container
 CMD ["/dist/main"]

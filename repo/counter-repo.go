@@ -11,7 +11,7 @@ import (
 )
 
 var client = redis.NewClient(&redis.Options{
-	Addr:     "192.168.1.111:6379",
+	Addr:     "192.168.1.205:6379",
 	Password: "",
 	DB:       0,
 })
@@ -19,10 +19,15 @@ var client = redis.NewClient(&redis.Options{
 const counterKey = "counter"
 const expirySeconds = 30 * time.Second
 
-var pgClient, pgerr = pgx.Connect(context.Background(), "postgres://yahia:2472BvZFgUNrof@192.168.1.111:5432/counter_db")
+var pgClient, pgerr = pgx.Connect(context.Background(), "postgres://yahia:2472BvZFgUNrof@192.168.1.205:5432/counter_db")
 
 func init() {
-	pgClient.Exec(client.Context(), "CREATE TABLE IF NOT EXISTS public.counters(id uuid NOT NULL, value bigint NOT NULL, CONSTRAINT \"unique id\" PRIMARY KEY (id), CONSTRAINT \"value non negative\" CHECK (value >= 0))")
+	pgClient.Exec(context.Background(), "CREATE TABLE IF NOT EXISTS public.counters(id uuid NOT NULL, value bigint NOT NULL, CONSTRAINT \"unique id\" PRIMARY KEY (id), CONSTRAINT \"value non negative\" CHECK (value >= 0))")
+	var count = 0
+	pgClient.QueryRow(context.Background(), "SELECT COUNT(*) FROM public.counters;").Scan(&count)
+	if count == 0 {
+		pgClient.Exec(context.Background(), "INSERT INTO public.counters(id, value) VALUES (gen_random_uuid (), 0);")
+	}
 }
 
 func GetCounter() (int64, error) {
@@ -41,13 +46,23 @@ func Increment() error {
 	if pgerr != nil {
 		return pgerr
 	}
-	go pgClient.QueryRow(context.Background(), "update counters set value = value +1").Scan()
+	go pgClient.Exec(context.Background(), "update counters set value = value +1")
 	return nil
 }
 
 // assumes a value will always return from db
 func getFreshCounter() int64 {
 	var value int64
-	pgClient.QueryRow(context.Background(), "select value from counters limit 1").Scan(&value)
+	rows, err := pgClient.Query(context.Background(), "select value from counters limit 1")
+	if err != nil {
+		fmt.Println("Query failed: ", err)
+	}
+	if rows.Next() {
+		rows.Scan(&value)
+		fmt.Printf("Query successful: %v\n", value)
+	} else {
+		fmt.Println("Query failed: empty")
+	}
+	defer rows.Close()
 	return value
 }
