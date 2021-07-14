@@ -19,9 +19,9 @@ services:
             POSTGRES_PASSWORD: 2472BvZFgUNrof
             POSTGRES_DB: counter_db
 
-    go-nsistency:
-        image: gon
-        container_name: gon
+    go-nsistency-1:
+        image: gon1
+        container_name: gon1
         depends_on: 
             - redis
             - postgres
@@ -34,12 +34,38 @@ services:
         ports: 
             - 8000:8000
 
+    go-nsistency-2:
+        image: gon2
+        container_name: gon2
+        depends_on: 
+            - redis
+            - postgres
+        restart: always
+        environment:
+            GON_PORT: 8001
+        build:
+            context: .
+            dockerfile: Dockerfile
+        ports: 
+            - 8001:8001
+
+    nginx:
+        image: gon-nginx
+        container_name: gon-nginx
+        build: ./nginx 
+        ports:
+        - 8080:80
+        depends_on:
+            - go-nsistency-1
+            - go-nsistency-2
+            
+
     pgadmin:
         container_name: gon-pgadmin
         restart: always
         image: dpage/pgadmin4:5.4
         environment:
-            - PGADMIN_DEFAULT_EMAIL=ymr_15@live.com
-            - PGADMIN_DEFAULT_PASSWORD=admin1234
+             PGADMIN_DEFAULT_EMAIL: ymr_15@live.com
+             PGADMIN_DEFAULT_PASSWORD: admin1234
         ports:
             - 5431:80

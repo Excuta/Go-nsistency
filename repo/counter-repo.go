@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/go-redis/redis"
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v4/pgxpool"
 )
 
 const BASE_URL = "192.168.1.108"
@@ -18,7 +18,7 @@ var redisClient = redis.NewClient(&redis.Options{
 	DB:       0,
 })
 
-var pgClient, pgerr = pgx.Connect(context.Background(), fmt.Sprintf("postgres://yahia:2472BvZFgUNrof@%v:5432/counter_db", BASE_URL))
+var pgClient, pgerr = pgxpool.Connect(context.Background(), fmt.Sprintf("postgres://yahia:2472BvZFgUNrof@%v:5432/counter_db", BASE_URL))
 
 const REDIS_COUNTER_KEY = "counter"
 const REDIS_COUNTER_EXPIRY_MILLIS = 30 * time.Second
@@ -45,11 +45,14 @@ func GetCounter() (int64, error) {
 }
 
 func Increment() error {
-	if pgerr != nil {
-		return pgerr
+	command, err := pgClient.Exec(context.Background(), "update counters set value = value +1")
+	if err != nil {
+		fmt.Println("Increment Failed: ", err)
+		return err
+	} else {
+		fmt.Printf("Increment Success: %v row(s) affected\n", command.RowsAffected())
+		return nil
 	}
-	go pgClient.Exec(context.Background(), "update counters set value = value +1")
-	return nil
 }
 
 func getFreshCounter() int64 {

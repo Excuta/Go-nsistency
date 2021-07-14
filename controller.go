@@ -30,6 +30,8 @@ func incrementHanlder(w http.ResponseWriter, r *http.Request, ps httprouter.Para
 	err := service.Increment()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+	} else {
+		w.Write([]byte("{\"msg\":\"Success\"}"))
 	}
 }
 
