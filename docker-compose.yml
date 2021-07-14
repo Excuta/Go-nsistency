@@ -17,6 +17,7 @@ services:
         environment:
             POSTGRES_USER: yahia
             POSTGRES_PASSWORD: 2472BvZFgUNrof
+            POSTGRES_DB: counter_db
 
     go-nsistency:
         image: gon
